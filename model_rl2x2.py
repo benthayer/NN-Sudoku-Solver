@@ -4,12 +4,12 @@ import tensorflow as tf
 import gen2
 from game_board import GameBoard
 
-input_units = 4**3 + 4*7
+input_units = 4**3 + 4*6
 hidden_units = (4**3) // 2
 # outputs are row col num commit, only does one at a time
-output_units = 4*3 + 1
+output_units = 4*3
 
-learning_rate = 1e-2
+learning_rate = 1e-4
 discount_factor = 0.8
 
 
@@ -125,7 +125,8 @@ with tf.Session() as sess:
 
             rewards = apply_discount(rewards)
             rewards -= np.mean(rewards)
-            rewards /= np.std(rewards)
+            if np.std(rewards) != 0:  # Don't want to divide by zero!
+                rewards /= np.std(rewards)
 
             episode_grads = sess.run(grads, feed_dict={
                 input_board: observations,

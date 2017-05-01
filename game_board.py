@@ -8,14 +8,14 @@ class GameBoard:
         self.filled_spaces = board.reshape([board_size, board_size, board_size]).sum(2)
         self.board_size = board_size
 
+        self.step_num = 0
+
         self.row = np.zeros(board_size)
         self.col = np.zeros(board_size)
-        self.num = np.zeros(board_size)
         self.box = np.zeros(board_size)
 
         self.row[0] = 1
         self.col[0] = 1
-        self.num[0] = 1
         self.box[0] = 1
 
         self.row_set = np.zeros(board_size)
@@ -28,9 +28,9 @@ class GameBoard:
         return int(self.board_size ** 0.5)
 
     def get_vec(self):
-        vec = np.append(self.board, [self.row, self.col, self.num, self.box,
+        vec = np.append(self.board, [self.row, self.col, self.box,
                                      self.row_set, self.col_set, self.box_set])
-        vec.shape = [1, self.board_size**3 + self.board_size*4]
+        vec.shape = [1, self.board_size**3 + self.board_size*6]
         return vec
     
     def get_row(self):
@@ -38,9 +38,6 @@ class GameBoard:
     
     def get_col(self):
         return np.argmax(self.col, 0)
-    
-    def get_num(self):
-        return np.argmax(self.num, 0)
 
     def get_box(self):
         return np.argmax(self.box, 0)
@@ -58,12 +55,12 @@ class GameBoard:
         self.col_set = np.sum(rows, axis=0)
 
     def update_box_set(self):
-        n = self.board_size
+        n = self.sub_size()
         box = self.get_box()
         col = box % n
         row = box // n
-        board = self.board.reshape([n]*3)
-        cells = board[row*n:(row+1)*n, col*n:(col+1)*n].reshape([n]*2)
+        board = self.board.reshape([self.board_size]*3)
+        cells = board[row*n:(row+1)*n, col*n:(col+1)*n].reshape([self.board_size]*2)
         self.box_set = cells.sum(0)
 
     def update_sets(self):
@@ -95,26 +92,24 @@ class GameBoard:
         self.select_box(row, col)
 
         self.update_col_set()
-    
-    def select_num(self, num):
-        self.num = np.zeros(self.board_size)
-        self.num[num] = 1
 
-    def get_selected(self):
-        return self.get_row() * self.board_size**2 + self.get_col() * self.board_size + self.get_num()
+    def get_index(self, num):
+        return self.get_row() * self.board_size**2 + self.get_col() * self.board_size + num
     
-    def commit(self):
+    def commit(self, num):
         # If the space already has a value, don't change it
         if self.filled_spaces[self.get_row()][self.get_col()] == 1:
-            return -0.05, False
+            return -0.25
+
+        num_index = self.get_index(num)
+
+        if self.solution[num_index] != 1:
+            return -1.0
 
         self.filled_spaces[self.get_row()][self.get_col()] = 1
-        self.board[self.get_selected()] = 1
+        self.board[num_index] = 1
 
-        if self.solution[self.get_selected()] == 1:
-            return 1.0, False
-        else:
-            return 0.2, True
+        return 1.0
     
     def play_move(self, move_id):
         move_type = move_id // self.board_size
@@ -128,13 +123,20 @@ class GameBoard:
         elif move_type == 1:
             self.select_col(move_val)
         elif move_type == 2:
-            self.select_num(move_val)
-        elif move_type == 3:
-            reward, done = self.commit()
+            reward = self.commit(move_val)
+
+        # if board is complete, end game
         done |= (self.board == self.solution).all()
+
+        self.step_num += 1
+
+        if self.step_num > 40:
+            done = True
+
         return reward, done
 
     def step(self, move_id):
         reward, done = self.play_move(move_id)
         observation = self.get_vec()
+
         return observation, reward, done, None
