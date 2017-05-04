@@ -4,13 +4,13 @@ import tensorflow as tf
 import gen2
 from game_board import GameBoard
 
-input_units = 4**3 + 4*6
-hidden_units = (4**3) // 2
-# outputs are row col num commit, only does one at a time
-output_units = 4*3
+# input_units = 4**3 + 4*6
+input_units = 4*3
+hidden_units = 8
+output_units = 4
 
-learning_rate = 1e-4
-discount_factor = 0.8
+learning_rate = 1e-3
+discount_factor = 0
 
 
 input_board = tf.placeholder(tf.float32, shape=[None, input_units])
@@ -25,7 +25,7 @@ b2 = tf.Variable(tf.constant(0.1, shape=[output_units]))
 
 output_raw = tf.matmul(h1, W2) + b2
 
-eval_output = tf.nn.softmax(output_raw)
+output_op = tf.nn.softmax(tf.nn.relu(output_raw))
 
 tvars = tf.trainable_variables()
 
@@ -33,9 +33,14 @@ tvars = tf.trainable_variables()
 # update cost function to multiply actions vector by output so only the relevant output is there
 actions_holder = tf.placeholder(tf.float32, [None, output_units])
 rewards_holder = tf.placeholder(tf.float32, [None, 1])
-loglik = tf.log(actions_holder*(actions_holder - eval_output) + (1 - actions_holder)*(actions_holder - eval_output))
+
+loglik = tf.log(actions_holder * (actions_holder - output_op) + (1 - actions_holder) * (actions_holder + output_op))
 loss = -tf.reduce_mean(loglik * rewards_holder)
-grads = tf.gradients(loss, tvars)
+
+cross_entropy = rewards_holder * \
+                tf.reduce_mean(-tf.reduce_sum(actions_holder * tf.log(output_op), reduction_indices=[1]))
+
+grads = tf.gradients(cross_entropy, tvars)
 
 
 adam = tf.train.AdamOptimizer(learning_rate)
@@ -54,24 +59,23 @@ def get_action(action_vec):
     for action, probability in enumerate(action_vec):
         action_sum += probability
         if num < action_sum:
-            return action  # action
+            return action
 
+num_total = 200000
+batch_size = 2
 
-def apply_discount(rewards):
-    discounted_rewards = np.zeros_like(rewards)
-    running_reward = 0
-    for i in reversed(range(rewards.size)):
-        running_reward = running_reward * discount_factor + reward
-        discounted_rewards[i] = running_reward
-    return discounted_rewards
+num_batches = num_total // batch_size
 
-num_batches = 1000
-batch_size = 50
+saver = tf.train.Saver()
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 
     for current_batch in range(num_batches):
+        with open('stop.txt') as stop_file:
+            line = stop_file.readline()
+            if line == 'y':
+                break
         puzzles, solutions = gen2.get_vector_batch(batch_size)
 
         batch_reward = 0
@@ -94,7 +98,7 @@ with tf.Session() as sess:
 
             while not done:
 
-                output = sess.run(eval_output, feed_dict={
+                output = sess.run(output_op, feed_dict={
                     input_board: observation
                 })
 
@@ -104,7 +108,7 @@ with tf.Session() as sess:
                 action_vec = np.zeros(output_units)
                 action_vec[action] = 1
 
-                observation, reward, done, _ = board.step(action)
+                observation, reward, done, _ = board.step(action, display=False)
 
                 batch_reward += reward
 
@@ -123,11 +127,6 @@ with tf.Session() as sess:
             actions = np.vstack(actions)
             rewards = np.vstack(rewards)
 
-            rewards = apply_discount(rewards)
-            rewards -= np.mean(rewards)
-            if np.std(rewards) != 0:  # Don't want to divide by zero!
-                rewards /= np.std(rewards)
-
             episode_grads = sess.run(grads, feed_dict={
                 input_board: observations,
                 actions_holder: actions,
@@ -145,7 +144,9 @@ with tf.Session() as sess:
             b2_grad: batch_grads[3]
         })
 
-        print("Batch {}".format(current_batch))
-        print("Average reward: {}".format(batch_reward / batch_size))
-        print("Average steps: {}".format(batch_steps / batch_size))
+        if current_batch % ((50 // batch_size) or 1) == 0:
+            print("Batch {}".format(current_batch))
+            print("Average reward: {}".format(batch_reward / batch_size))
+            print("Average steps: {}".format(batch_steps / batch_size))
 
+    saver.save(sess, './model2')
