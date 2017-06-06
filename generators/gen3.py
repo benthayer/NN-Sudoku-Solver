@@ -23,6 +23,26 @@ def array_to_str(grid):
     return grid_str
 
 
+def array_to_vec(grid):
+    vec = []
+    for num in grid:
+        one_hot = np.zeros(9)
+        one_hot[num - 1] = 1
+        vec.append(one_hot)
+    vec = np.array(vec)
+    vec.shape = [9**3]
+    return vec
+
+
+def vec_to_array(vec):
+    vec.shape = [9**2, 9]  # Each row is a one hot of a number
+
+    nums = np.array(range(9)) + 1
+    grid = np.matmul(vec, nums)
+    grid.shape = [9, 9]
+    return grid
+
+
 # List of sudoku puzzles "puzzles.txt" downloaded from magictour.free.fr/sudoku.htm as "top2365.txt",
 # Training solutions "solutions.txt" was generated using gen3_solutions.py and sudoku-solver
 def load_puzzles():
@@ -181,3 +201,13 @@ def get_batch(batch_size=1000):
         solution_batch.append(solution)
 
     return np.array(puzzle_batch), np.array(solution_batch)
+
+
+def get_vector_batch(batch_size=1000):
+    puzzles, solutions = get_batch(batch_size)
+    vec_puzzles = []
+    vec_solutions = []
+    for i in range(batch_size):
+        vec_puzzles.append(array_to_vec(puzzles[i]))
+        vec_solutions.append(array_to_vec(solutions[i]))
+    return np.array(vec_puzzles), np.array(vec_puzzles)
