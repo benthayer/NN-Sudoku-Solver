@@ -1,12 +1,10 @@
 import unittest
 
-
-import gen3
-
+import numpy as np
 from sudokulib.grid import StringGrid, InvalidGrid
 from sudokulib.solver import SudokuSolver
 
-import numpy as np
+from generators import gen3
 
 
 class TestGen3(unittest.TestCase):
@@ -36,6 +34,25 @@ class TestGen3(unittest.TestCase):
         grid.shape = [9**2]
         grid_str = '538642917452873169783194625369518274176925483624759831247381596891467352915236748'
         self.assertTrue((gen3.str_to_array(grid_str) == grid).all())
+
+    def test_array_to_vec(self):
+        grid = np.array([[5, 3, 8, 6, 4, 2, 9, 1, 7],
+                         [4, 5, 2, 8, 7, 3, 1, 6, 9],
+                         [7, 8, 3, 1, 9, 4, 6, 2, 5],
+                         [3, 6, 9, 5, 1, 8, 2, 7, 4],
+                         [1, 7, 6, 9, 2, 5, 4, 8, 3],
+                         [6, 2, 4, 7, 5, 9, 8, 3, 1],
+                         [2, 4, 7, 3, 8, 1, 5, 9, 6],
+                         [8, 9, 1, 4, 6, 7, 3, 5, 2],
+                         [9, 1, 5, 2, 3, 6, 7, 4, 8]])
+        grid.shape = [9**2]
+
+        vec = gen3.array_to_vec(grid)
+
+        new_grid = gen3.vec_to_array(vec)
+        new_grid.shape = [9**2]
+
+        self.assertTrue((new_grid == grid).all())
 
     def test_lengths(self):
         # Make sure the lengths of all_puzzles and all_solutions are the same and == 2365
@@ -105,11 +122,11 @@ class TestGen3(unittest.TestCase):
         puzzle = gen3.get_random_puzzle()
         puzzle.shape = [9, 9]
         rows = set()
-        
+
         for i in range(9):
             rows.add(tuple(puzzle[i, :]))
         permuted_puzzle = gen3.permute_rows(puzzle)
-        
+
         for i in range(9):
             row = tuple(permuted_puzzle[i, :])
             self.assertIn(row, rows)
@@ -120,11 +137,11 @@ class TestGen3(unittest.TestCase):
         puzzle = gen3.get_random_puzzle()
         puzzle.shape = [9, 9]
         cols = set()
-        
+
         for i in range(9):
             cols.add(tuple(puzzle[:, i]))
         permuted_puzzle = gen3.permute_columns(puzzle)
-        
+
         for i in range(9):
             col = tuple(permuted_puzzle[:, i])
             self.assertIn(col, cols)
