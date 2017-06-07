@@ -1,6 +1,5 @@
 import unittest
 
-import numpy as np
 from sudokulib.grid import StringGrid, InvalidGrid
 from sudokulib.solver import SudokuSolver
 
@@ -9,50 +8,53 @@ from generators import gen3
 
 class TestGen3(unittest.TestCase):
     def test_array_to_string(self):
-        grid = np.array([[5, 3, 8, 6, 4, 2, 9, 1, 7],
-                         [4, 5, 2, 8, 7, 3, 1, 6, 9],
-                         [7, 8, 3, 1, 9, 4, 6, 2, 5],
-                         [3, 6, 9, 5, 1, 8, 2, 7, 4],
-                         [1, 7, 6, 9, 2, 5, 4, 8, 3],
-                         [6, 2, 4, 7, 5, 9, 8, 3, 1],
-                         [2, 4, 7, 3, 8, 1, 5, 9, 6],
-                         [8, 9, 1, 4, 6, 7, 3, 5, 2],
-                         [9, 1, 5, 2, 3, 6, 7, 4, 8]])
+        grid = [5, 3, 8, 6, 4, 2, 9, 1, 7,
+                4, 5, 2, 8, 7, 3, 1, 6, 9,
+                7, 8, 3, 1, 9, 4, 6, 2, 5,
+                3, 6, 9, 5, 1, 8, 2, 7, 4,
+                1, 7, 6, 9, 2, 5, 4, 8, 3,
+                6, 2, 4, 7, 5, 9, 8, 3, 1,
+                2, 4, 7, 3, 8, 1, 5, 9, 6,
+                8, 9, 1, 4, 6, 7, 3, 5, 2,
+                9, 1, 5, 2, 3, 6, 7, 4, 8]
+        # Grid is stored with classes starting at 0
+        grid = list(map(lambda x: x-1, grid))
         grid_str = '538642917452873169783194625369518274176925483624759831247381596891467352915236748'
         self.assertEqual(gen3.array_to_str(grid), grid_str)
 
     def test_string_to_array(self):
-        grid = np.array([[5, 3, 8, 6, 4, 2, 9, 1, 7],
-                         [4, 5, 2, 8, 7, 3, 1, 6, 9],
-                         [7, 8, 3, 1, 9, 4, 6, 2, 5],
-                         [3, 6, 9, 5, 1, 8, 2, 7, 4],
-                         [1, 7, 6, 9, 2, 5, 4, 8, 3],
-                         [6, 2, 4, 7, 5, 9, 8, 3, 1],
-                         [2, 4, 7, 3, 8, 1, 5, 9, 6],
-                         [8, 9, 1, 4, 6, 7, 3, 5, 2],
-                         [9, 1, 5, 2, 3, 6, 7, 4, 8]])
-        grid.shape = [9**2]
+        grid = [5, 3, 8, 6, 4, 2, 9, 1, 7,
+                4, 5, 2, 8, 7, 3, 1, 6, 9,
+                7, 8, 3, 1, 9, 4, 6, 2, 5,
+                3, 6, 9, 5, 1, 8, 2, 7, 4,
+                1, 7, 6, 9, 2, 5, 4, 8, 3,
+                6, 2, 4, 7, 5, 9, 8, 3, 1,
+                2, 4, 7, 3, 8, 1, 5, 9, 6,
+                8, 9, 1, 4, 6, 7, 3, 5, 2,
+                9, 1, 5, 2, 3, 6, 7, 4, 8]
+        # Grid is stored with classes starting at 0
+        grid = list(map(lambda x: x-1, grid))
         grid_str = '538642917452873169783194625369518274176925483624759831247381596891467352915236748'
-        self.assertTrue((gen3.str_to_array(grid_str) == grid).all())
+        self.assertEqual(gen3.str_to_array(grid_str), grid)
 
     def test_array_to_vec(self):
-        grid = np.array([[5, 3, 8, 6, 4, 2, 9, 1, 7],
-                         [4, 5, 2, 8, 7, 3, 1, 6, 9],
-                         [7, 8, 3, 1, 9, 4, 6, 2, 5],
-                         [3, 6, 9, 5, 1, 8, 2, 7, 4],
-                         [1, 7, 6, 9, 2, 5, 4, 8, 3],
-                         [6, 2, 4, 7, 5, 9, 8, 3, 1],
-                         [2, 4, 7, 3, 8, 1, 5, 9, 6],
-                         [8, 9, 1, 4, 6, 7, 3, 5, 2],
-                         [9, 1, 5, 2, 3, 6, 7, 4, 8]])
-        grid.shape = [9**2]
+        grid = [5, 3, 8, 6, 4, 2, 9, 1, 7,
+                4, 5, 2, 8, 7, 3, 1, 6, 9,
+                7, 8, 3, 1, 9, 4, 6, 2, 5,
+                3, 6, 9, 5, 1, 8, 2, 7, 4,
+                1, 7, 6, 9, 2, 5, 4, 8, 3,
+                6, 2, 4, 7, 5, 9, 8, 3, 1,
+                2, 4, 7, 3, 8, 1, 5, 9, 6,
+                8, 9, 1, 4, 6, 7, 3, 5, 2,
+                9, 1, 5, 2, 3, 6, 7, 4, 8]
+        # Grid is stored with classes starting at 0
+        grid = list(map(lambda x: x-1, grid))
 
         vec = gen3.array_to_vec(grid)
 
         new_grid = gen3.vec_to_array(vec)
-        new_grid.shape = [9**2]
 
-        self.assertTrue((new_grid == grid).all())
+        self.assertEqual(new_grid, grid)
 
     def test_lengths(self):
         # Make sure the lengths of all_puzzles and all_solutions are the same and == 2365
@@ -120,30 +122,28 @@ class TestGen3(unittest.TestCase):
     def test_rows(self):
         # Make sure you can find all the rows in a permutation of the original
         puzzle = gen3.get_random_puzzle()
-        puzzle.shape = [9, 9]
         rows = set()
 
         for i in range(9):
-            rows.add(tuple(puzzle[i, :]))
+            rows.add(tuple(puzzle[i*9:i*9+9]))
         permuted_puzzle = gen3.permute_rows(puzzle)
 
         for i in range(9):
-            row = tuple(permuted_puzzle[i, :])
+            row = tuple(permuted_puzzle[i*9:i*9+9])
             self.assertIn(row, rows)
             rows.difference_update({row})
 
     def test_columns(self):
         # Make sure you can find all the columns in a permutation of the original
         puzzle = gen3.get_random_puzzle()
-        puzzle.shape = [9, 9]
         cols = set()
 
         for i in range(9):
-            cols.add(tuple(puzzle[:, i]))
+            cols.add(tuple(puzzle[i:8*9+i:9]))
         permuted_puzzle = gen3.permute_columns(puzzle)
 
         for i in range(9):
-            col = tuple(permuted_puzzle[:, i])
+            col = tuple(permuted_puzzle[i:8*9+i:9])
             self.assertIn(col, cols)
             cols.difference_update({col})
 
@@ -152,34 +152,9 @@ class TestGen3(unittest.TestCase):
         puzzle = gen3.get_random_puzzle()
         permutation = gen3.get_permutation()
         permuted_puzzle = gen3.permute_numbers(puzzle, permutation)
-        puzzle.shape = permuted_puzzle.shape = [9**2]
-        for i in range(9**2):
+        for i in range(81):
             num = puzzle[i]
-            if num == 0:
-                self.assertEqual(permuted_puzzle[i], 0)
+            if num == -1:
+                self.assertEqual(permuted_puzzle[i], -1)
             else:
-                self.assertEqual(permuted_puzzle[i], permutation[num - 1] + 1)
-
-    def test_row_shapes(self):
-        # Make sure the shapes are both correct for board and new_board
-        board = gen3.get_random_puzzle()
-        shape = board.shape
-        new_board = gen3.permute_rows(board)
-        self.assertEqual(board.shape, shape)
-        self.assertEqual(new_board.shape, shape)
-
-    def test_column_shapes(self):
-        # Make sure the shapes are both correct for board and new_board
-        board = gen3.get_random_puzzle()
-        shape = board.shape
-        new_board = gen3.permute_columns(board)
-        self.assertEqual(board.shape, shape)
-        self.assertEqual(new_board.shape, shape)
-
-    def test_number_shapes(self):
-        # Make sure the shapes are both correct for board and new_board
-        board = gen3.get_random_puzzle()
-        shape = board.shape
-        new_board = gen3.permute_numbers(board)
-        self.assertEqual(board.shape, shape)
-        self.assertEqual(new_board.shape, shape)
+                self.assertEqual(permuted_puzzle[i], permutation[num])

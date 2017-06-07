@@ -1,86 +1,74 @@
 import os
 
-import numpy as np
 import random
-
-all_puzzles = None
-all_solutions = None
 
 
 def str_to_array(grid_str):
-    grid = np.zeros([9, 9], np.int8)
-    for i in range(9):
-        grid[i] = list(map(lambda x: 0 if x is '.' else int(x), grid_str[i*9:i*9 + 9]))
-    grid.shape = [9**2]
+    grid = list(map(lambda x: -1 if x is '.' else int(x) - 1, grid_str))
     return grid
 
 
 def array_to_str(grid):
-    grid.shape = [9, 9]
     grid_str = ''
-    for row in grid:
-        grid_str += ''.join([str(i) for i in row])
+    for item in grid:
+        grid_str += str(item+1) if item != -1 else '.'
     return grid_str
 
 
 def array_to_vec(grid):
     vec = []
     for num in grid:
-        one_hot = np.zeros(9)
-        one_hot[num - 1] = 1
-        vec.append(one_hot)
-    vec = np.array(vec)
-    vec.shape = [9**3]
+        one_hot = [0]*9
+        one_hot[num] = 1
+        vec.extend(one_hot)
     return vec
 
 
 def vec_to_array(vec):
-    vec.shape = [9**2, 9]  # Each row is a one hot of a number
-
-    nums = np.array(range(9)) + 1
-    grid = np.matmul(vec, nums)
-    grid.shape = [9, 9]
+    grid = []
+    for i, num in enumerate(vec):
+        if num:
+            grid.append(i % 9)
     return grid
 
 
 # List of sudoku puzzles "puzzles.txt" downloaded from magictour.free.fr/sudoku.htm as "top2365.txt",
 # Training solutions "solutions.txt" was generated using gen3_solutions.py and sudoku-solver
 def load_puzzles():
-    global all_puzzles
-    all_puzzles = []
+    puzzles = []
     with open(os.path.join(os.path.dirname(__file__), 'data/puzzles.txt')) as puzzle_file:
         for puzzle in puzzle_file:
-            puzzle = str_to_array(puzzle)
-            all_puzzles.append(puzzle)
-        all_puzzles = np.array(all_puzzles)
+            puzzle = str_to_array(puzzle.strip())
+            puzzles.append(puzzle)
+    return puzzles
 
 
 def load_solutions():
-    global all_solutions
-    all_solutions = []
+    solutions = []
     with open(os.path.join(os.path.dirname(__file__), 'data/solutions.txt')) as solution_file:
         for solution in solution_file:
-            solution = str_to_array(solution)
-            all_solutions.append(solution)
-    all_solutions = np.array(all_solutions)
+            solution = str_to_array(solution.strip())
+            solutions.append(solution)
+    return solutions
 
-load_puzzles()
-load_solutions()
+
+all_puzzles = load_puzzles()
+all_solutions = load_solutions()
 
 
 def get_permutation():
-    mapping = np.array(range(9))
-    np.random.shuffle(mapping)
+    mapping = list(range(9))
+    random.shuffle(mapping)
     return mapping
 
 
 def get_constrained_permutation():
-    mapping = np.zeros(9, np.int8)
-    large_mapping = np.array(range(3))
-    np.random.shuffle(large_mapping)
+    mapping = [0]*9
+    large_mapping = list(range(3))
+    random.shuffle(large_mapping)
     for i in range(3):
-        small_mapping = np.array(range(3))
-        np.random.shuffle(small_mapping)
+        small_mapping = list(range(3))
+        random.shuffle(small_mapping)
         for j in range(3):
             mapping[i*3 + j] = large_mapping[i]*3 + small_mapping[j]
     return mapping
@@ -101,42 +89,29 @@ def get_grid_permutations(permutations=(None, None, None)):
 def permute_rows(grid, permutation=None):
     if permutation is None:
         permutation = get_constrained_permutation()
-    shape = grid.shape
-    grid.shape = [9, 9]
-    new_grid = np.zeros([9, 9], np.int8)
-    for i in range(9):
-        new_grid[i] = grid[permutation[i]]
-    grid.shape = shape
-    new_grid.shape = shape
+    new_grid = []
+    for row in range(9):
+        for col in range(9):
+            new_grid.append(grid[permutation[row] * 9 + col])
     return new_grid
 
 
 def permute_columns(grid, permutation=None):
     if permutation is None:
         permutation = get_constrained_permutation()
-    shape = grid.shape
-    grid.shape = [9, 9]
-    new_grid = np.zeros([9, 9], np.int8)
-    for i in range(9):
-        new_grid[:, i] = grid[:, permutation[i]]
-    grid.shape = shape
-    new_grid.shape = shape
+    new_grid = []
+    for row in range(9):
+        for col in range(9):
+            new_grid.append(grid[row * 9 + permutation[col]])
     return new_grid
 
 
 def permute_numbers(grid, permutation=None):
     if permutation is None:
         permutation = get_permutation()
-    shape = grid.shape
-    grid.shape = [9**2]
-    new_grid = np.zeros([9**2], np.int8)
-    # Zero indicates a blank spot, it should always map to itself.
-    # Other numbers are also offset by 1, so this also allows for the index to match
-    permutation = np.append(np.array([0]), permutation + 1)
+    new_grid = [0]*9**2
     for i in range(9**2):
-        new_grid[i] = permutation[grid[i]]
-    grid.shape = shape
-    new_grid.shape = shape
+        new_grid[i] = permutation[grid[i]] if grid[i] != -1 else -1
     return new_grid
 
 
@@ -194,20 +169,18 @@ def get_batch(batch_size=1000):
     for i in range(batch_size):
         puzzle, solution = get_permuted_pair()
 
-        puzzle.shape = [9**2]
-        solution.shape = [9**2]
-
         puzzle_batch.append(puzzle)
         solution_batch.append(solution)
 
-    return np.array(puzzle_batch), np.array(solution_batch)
+    return puzzle_batch, solution_batch
 
 
 def get_vector_batch(batch_size=1000):
+    # TODO I should probably put this into GameBoard
     puzzles, solutions = get_batch(batch_size)
     vec_puzzles = []
     vec_solutions = []
     for i in range(batch_size):
         vec_puzzles.append(array_to_vec(puzzles[i]))
         vec_solutions.append(array_to_vec(solutions[i]))
-    return np.array(vec_puzzles), np.array(vec_puzzles)
+    return vec_puzzles, vec_puzzles
