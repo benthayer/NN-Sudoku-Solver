@@ -2,6 +2,8 @@ import os
 
 import random
 
+from generators import permuter
+
 
 def str_to_array(grid_str):
     grid = list(map(lambda x: -1 if x is '.' else int(x) - 1, grid_str))
@@ -56,72 +58,6 @@ all_puzzles = load_puzzles()
 all_solutions = load_solutions()
 
 
-def get_permutation():
-    mapping = list(range(9))
-    random.shuffle(mapping)
-    return mapping
-
-
-def get_constrained_permutation():
-    mapping = [0]*9
-    large_mapping = list(range(3))
-    random.shuffle(large_mapping)
-    for i in range(3):
-        small_mapping = list(range(3))
-        random.shuffle(small_mapping)
-        for j in range(3):
-            mapping[i*3 + j] = large_mapping[i]*3 + small_mapping[j]
-    return mapping
-
-
-def get_grid_permutations(permutations=(None, None, None)):
-    new_permutations = [get_constrained_permutation(),
-                        get_constrained_permutation(),
-                        get_permutation()]
-
-    for i in range(3):
-        if permutations[i] is not None:
-            new_permutations[i] = permutations[i]
-
-    return tuple(new_permutations)
-
-
-def permute_rows(grid, permutation=None):
-    if permutation is None:
-        permutation = get_constrained_permutation()
-    new_grid = []
-    for row in range(9):
-        for col in range(9):
-            new_grid.append(grid[permutation[row] * 9 + col])
-    return new_grid
-
-
-def permute_columns(grid, permutation=None):
-    if permutation is None:
-        permutation = get_constrained_permutation()
-    new_grid = []
-    for row in range(9):
-        for col in range(9):
-            new_grid.append(grid[row * 9 + permutation[col]])
-    return new_grid
-
-
-def permute_numbers(grid, permutation=None):
-    if permutation is None:
-        permutation = get_permutation()
-    new_grid = [0]*9**2
-    for i in range(9**2):
-        new_grid[i] = permutation[grid[i]] if grid[i] != -1 else -1
-    return new_grid
-
-
-def permute(grid, permutations=(None, None, None)):
-    grid = permute_rows(grid, permutations[0])
-    grid = permute_columns(grid, permutations[1])
-    grid = permute_numbers(grid, permutations[2])
-    return grid
-
-
 def get_random_puzzle():
     index = random.randrange(len(all_puzzles))
     puzzle = all_puzzles[index]
@@ -130,7 +66,7 @@ def get_random_puzzle():
 
 def get_permuted_puzzle():
     puzzle = get_random_puzzle()
-    return permute(puzzle)
+    return permuter.permute(puzzle)
 
 
 def get_random_solution():
@@ -141,7 +77,12 @@ def get_random_solution():
 
 def get_permuted_solution():
     solution = get_random_solution()
-    return permute(solution)
+    return permuter.permute(solution)
+
+
+def get_permuted_pair():
+    puzzle, solution = get_random_pair()
+    return permuter.permute_pair(puzzle, solution)
 
 
 def get_random_pair():
@@ -149,18 +90,6 @@ def get_random_pair():
     puzzle = all_puzzles[index]
     solution = all_solutions[index]
     return puzzle, solution
-
-
-def permute_pair(puzzle, solution, permutations=(None, None, None)):
-    permutations = get_grid_permutations(permutations)
-    puzzle = permute(puzzle, permutations)
-    solution = permute(solution, permutations)
-    return puzzle, solution
-
-
-def get_permuted_pair():
-    puzzle, solution = get_random_pair()
-    return permute_pair(puzzle, solution)
 
 
 def get_batch(batch_size=1000):
